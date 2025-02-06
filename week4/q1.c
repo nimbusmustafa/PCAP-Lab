@@ -39,7 +39,7 @@ long long factorial(int n) {
 int main(int argc, char **argv)
 {
     int rank, size, N;
-    long long fact = 1, ans = 0;
+    long long fact = 0, ans = 0;
     int err_code;
 
     // Initialize MPI
@@ -79,18 +79,21 @@ int main(int argc, char **argv)
     }
 
     // Each process computes its portion of the factorials
-    // Here, each process calculates factorial for its rank-based numbers
-    for (int i = rank + 1; i <= N; i += size)
+    if (rank < N) // Only the first N processes should do work
     {
-        fact *= i;
+        // Calculate factorial for its corresponding rank (adjusted by 1)
+        fact = factorial(rank + 1); // Calculate rank+1 factorial
+        
+        // Print the local factorial (optional, can be disabled for large N)
+        printf("Rank %d: %d! = %lld\n", rank, rank + 1, fact);
     }
 
-    // Perform MPI_Scan to accumulate the sum of factorials
-    err_code = MPI_Scan(&fact, &ans, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
-    error_handle(err_code, rank, "MPI_Scan");
+    // Perform the reduction to sum the factorials from rank 0 to N-1
+    err_code = MPI_Reduce(&fact, &ans, 1, MPI_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
+    error_handle(err_code, rank, "MPI_Reduce");
 
-    // Only the last process (rank N-1) will print the final result
-    if (rank == N - 1)
+    // Only the root process (rank 0) will print the final result
+    if (rank == 0)
     {
         printf("The sum of factorials from 1! to %d! is: %lld\n", N, ans);
     }
