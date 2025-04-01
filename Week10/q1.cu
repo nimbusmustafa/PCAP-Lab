@@ -18,9 +18,20 @@ __global__ void matrixMulKernel(float* A, float* B, float* C, int n) {
     }
 }
 
+void printMatrix(const char* name, float* mat, int n, int sampleSize) {
+    printf("%s (top-left %dx%d):\n", name, sampleSize, sampleSize);
+    for (int i = 0; i < sampleSize; ++i) {
+        for (int j = 0; j < sampleSize; ++j) {
+            printf("%.1f ", mat[i * n + j]);
+        }
+        printf("\n");
+    }
+    printf("...\n\n");
+}
+
 int main() {
     int size = N * N * sizeof(float);
-    
+
     // Allocate host memory
     float* h_A = (float*)malloc(size);
     float* h_B = (float*)malloc(size);
@@ -31,6 +42,10 @@ int main() {
         h_A[i] = 1.0f;
         h_B[i] = 2.0f;
     }
+
+    // Print part of the inputs
+    printMatrix("Matrix A", h_A, N, 4);
+    printMatrix("Matrix B", h_B, N, 4);
 
     // Allocate device memory
     float *d_A, *d_B, *d_C;
@@ -52,8 +67,15 @@ int main() {
     // Copy result matrix back to host
     cudaMemcpy(h_C, d_C, size, cudaMemcpyDeviceToHost);
 
-    // Optionally print part of the result
-    printf("C[0][0] = %f\n", h_C[0]);
+    // Print part of the result
+    printf("Matrix C (top-left 4x4):\n");
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            printf("%.1f ", h_C[i * N + j]);
+        }
+        printf("\n");
+    }
+    printf("...\n");
 
     // Cleanup
     free(h_A); free(h_B); free(h_C);
